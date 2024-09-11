@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 
 # My views are here.
 from rest_framework.decorators import api_view
@@ -6,6 +6,42 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import User, InvestmentAccount, UserInvestmentAccount
 from .serializer import UserSerializer, InvestmentAccountSerializer, UserInvestmentAccountSerializer, UserRegistrationSerializer
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+
+def home(request):
+    # Checking to see if the user is logging in
+    if request.method == 'POST':
+        email = request.POST['email']
+        password = request.POST['password']
+        # Authenticate the user
+        user = authenticate(request, email=email, password=password)
+        if user is not None:
+            login(request, user)
+            messages.success(request, 'You have successfully logged in')
+            return redirect('home')
+        else:
+            messages.success(request, 'Invalid login credentials, Try Again')
+            return redirect('home')
+    else:    
+         return render(request, 'home.html', {})
+
+def logout_user (request):
+    logout(request)
+    messages.success(request, 'You have been logged out')
+    return redirect('home')
+
+def register_user(request):
+    if request.method == 'POST':
+        serializer = UserRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            messages.success(request, 'You have successfully registered')
+            return redirect('home')
+        else:
+            messages.error(request, 'Error registering user')
+            return redirect('home')
+    return render(request, 'register.html', {})
 
 @api_view(['GET'])
 def get_users(request):
