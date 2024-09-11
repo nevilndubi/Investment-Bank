@@ -1,10 +1,24 @@
 from rest_framework import serializers
 from .models import User, InvestmentAccount, UserInvestmentAccount
+from django.contrib.auth.hashers import make_password
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = '__all__'
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['email', 'password']
+
+    def create(self, validated_data):
+        user = User(
+            email=validated_data['email'],
+            password=make_password(validated_data['password']),
+        )
+        user.save()
+        return user
 
 class InvestmentAccountSerializer(serializers.ModelSerializer):
     users = UserSerializer(many=True, read_only=True)
