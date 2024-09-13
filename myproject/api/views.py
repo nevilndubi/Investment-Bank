@@ -8,14 +8,16 @@ from .models import User, InvestmentAccount, UserInvestmentAccount
 from .serializer import UserSerializer, InvestmentAccountSerializer, UserInvestmentAccountSerializer, UserRegistrationSerializer
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
+from .forms import SignUpForm
+from .serializer import UserRegistrationSerializer
 
 def home(request):
     # Checking to see if the user is logging in
     if request.method == 'POST':
-        email = request.POST['email']
+        username = request.POST['username']
         password = request.POST['password']
         # Authenticate the user
-        user = authenticate(request, email=email, password=password)
+        user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
             messages.success(request, 'You have successfully logged in')
@@ -33,15 +35,21 @@ def logout_user (request):
 
 def register_user(request):
     if request.method == 'POST':
-        serializer = UserRegistrationSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            messages.success(request, 'You have successfully registered')
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            form.save()
+            # Authenticate and login the user
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password1')
+            user = authenticate(username=username, password=password)
+            login(request, user)
+            messages.success(request, 'You have successfully been registered')
             return redirect('home')
-        else:
-            messages.error(request, 'Error registering user')
-            return redirect('home')
-    return render(request, 'register.html', {})
+    else:   
+        form = SignUpForm()
+        return render(request, 'register.html', {'form': form})
+    
+    return render(request, 'register.html', {'form': form})
 
 @api_view(['GET'])
 def get_users(request):
@@ -115,10 +123,3 @@ def investment_account_detail(request, pk):
         account.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-@api_view(['POST'])
-def register_user(request):
-    serializer = UserRegistrationSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -8,8 +8,7 @@ from django.contrib.auth.hashers import make_password
 class User(models.Model):
     name = models.CharField(max_length=100)
     age = models.IntegerField()
-    email = models.EmailField(unique=True, max_length=100)
-    password = models.CharField(max_length=128, default=make_password('temporary_password'))  # Increased Length for better security
+    email = models.EmailField(unique=True, max_length=100) 
     national_id = models.CharField(max_length=20, unique=True)
     date_of_birth = models.DateField(validators=[MaxValueValidator(limit_value=datetime.today)])
     phone_number = models.CharField(max_length=20)
