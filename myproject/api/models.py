@@ -1,22 +1,30 @@
 from django.db import models
-from datetime import datetime
+from datetime import datetime, date
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils import timezone
 from django.contrib.auth.hashers import make_password
 
 # My models are here.
 class User(models.Model):
-    name = models.CharField(max_length=100)
-    age = models.IntegerField()
+    first_name = models.CharField(max_length=50)
+    surname = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
     email = models.EmailField(unique=True, max_length=100) 
-    national_id = models.CharField(max_length=20, unique=True)
-    date_of_birth = models.DateField(validators=[MaxValueValidator(limit_value=datetime.today)])
     phone_number = models.CharField(max_length=20)
+    zipcode = models.CharField(max_length=10)
+    address = models.TextField(max_length=100)
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    area_of_residence = models.CharField(max_length=100)
+    national_id = models.CharField(max_length=20, unique=True)
+    date_of_birth = models.DateField(validators=[MaxValueValidator(limit_value=date.today)])
+    age = models.IntegerField()
+    place_of_work = models.CharField(max_length=250)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.name
+        return (f"{self.first_name} {self.surname} {self.last_name}")
 
 class InvestmentAccount(models.Model):
     name = models.CharField(max_length=100)

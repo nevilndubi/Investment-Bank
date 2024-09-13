@@ -12,6 +12,7 @@ from .forms import SignUpForm
 from .serializer import UserRegistrationSerializer
 
 def home(request):
+    users = User.objects.all()
     # Checking to see if the user is logging in
     if request.method == 'POST':
         username = request.POST['username']
@@ -26,7 +27,7 @@ def home(request):
             messages.success(request, 'Invalid login credentials, Try Again')
             return redirect('home')
     else:    
-         return render(request, 'home.html', {})
+         return render(request, 'home.html', {'users': users})
 
 def logout_user (request):
     logout(request)
