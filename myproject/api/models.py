@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from django.db import models
 from datetime import datetime, date
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -25,6 +26,34 @@ class User(models.Model):
 
     def __str__(self):
         return (f"{self.first_name} {self.surname} {self.last_name}")
+
+class Branch (models.Model):
+    name = models.CharField(max_length=100)
+    address = models.TextField(max_length=250)
+    branch_code = models.CharField(max_length=10, unique=True)
+   
+    def json_object(self):
+        return {
+            "name ": self.name,
+            "address": self.address,
+            "branch_code": self.branch_code
+        }
+    
+    def __str__(self):
+        return self.name
+
+class Bank(models.Model):
+    name = models.CharField(max_length=100)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+
+    def json_object(self):
+        return {
+            "name": self.name,
+            "branch": self.branch
+        } 
+    
+    def __str__(self):
+        return self.name
 
 class InvestmentAccount(models.Model):
     name = models.CharField(max_length=100)
