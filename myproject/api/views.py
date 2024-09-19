@@ -5,12 +5,12 @@ from django.http import Http404
 # My views are here.
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status, generics
+from rest_framework import status, generics, viewsets
 from rest_framework.views import APIView
-from .models import User, InvestmentAccount, UserInvestmentAccount
+from .models import User, InvestmentAccount, UserInvestmentAccount, Bank, Branch, Transfer, Withdraw, Deposit
 from .models import *
 from .serializer import *
-from .serializer import UserSerializer, InvestmentAccountSerializer, UserInvestmentAccountSerializer, UserRegistrationSerializer
+from .serializer import UserSerializer, InvestmentAccountSerializer, UserInvestmentAccountSerializer, UserRegistrationSerializer, BankSerializer, BranchSerializer, TransferSerializer, WithdrawSerializer, DepositSerializer
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .forms import SignUpForm
@@ -31,6 +31,22 @@ class BranchesAPIView(generics.ListCreateAPIView):
 class BranchDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Branch.objects.all()
     serializer_class = BranchSerializer
+
+class InvestmentAccountViewSet(viewsets.ModelViewSet):
+    queryset = InvestmentAccount.objects.all()
+    serializer_class = InvestmentAccountSerializer
+
+class TransferViewSet(viewsets.ModelViewSet):
+    queryset = Transfer.objects.all()
+    serializer_class = TransferSerializer
+
+class WithdrawViewSet(viewsets.ModelViewSet):
+    queryset = Withdraw.objects.all()
+    serializer_class = WithdrawSerializer
+
+class DepositViewSet(viewsets.ModelViewSet):
+    queryset = Deposit.objects.all()
+    serializer_class = DepositSerializer
 
 def home(request):
     users = User.objects.all()
