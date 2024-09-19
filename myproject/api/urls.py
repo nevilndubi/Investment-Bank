@@ -1,5 +1,5 @@
 from django.urls import path, re_path
-from .views import get_users, create_user, user_detail, investment_accounts, investment_account_detail, register_user, BanksAPIView, BranchesAPIView
+from .views import get_users, create_user, user_detail, investment_accounts, investment_account_detail, register_user, BanksAPIView, BranchesAPIView, BranchDetailAPIView, BankDetailAPIView
 from . import views
 
 urlpatterns = [
@@ -12,5 +12,7 @@ urlpatterns = [
     path('accounts/<int:pk>/', investment_account_detail, name='investment_account_detail'),
     path('register/', views.register_user, name='register'),
     re_path(r'^banks', BanksAPIView.as_view(), name='banks'),
+    re_path(r'^bank/(?P<pk>[0-9]+)/', BankDetailAPIView.as_view(), name='bank-detail'),
     re_path(r'^branches/', BranchesAPIView.as_view(),name='branches'),
+    re_path(r'^branch/(?P<pk>[0-9]+)/', BranchDetailAPIView.as_view(),name='branch-detail'),
 ]
