@@ -31,7 +31,10 @@ class Branch (models.Model):
     name = models.CharField(max_length=100)
     address = models.TextField(max_length=250)
     branch_code = models.CharField(max_length=10, unique=True)
-   
+    
+    class Meta:
+        verbose_name_plural = "Branches"
+
     def json_object(self):
         return {
             "name ": self.name,

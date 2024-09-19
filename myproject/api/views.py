@@ -1,15 +1,36 @@
+from __future__ import unicode_literals
 from django.shortcuts import render, redirect
+from django.http import Http404
 
 # My views are here.
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics
+from rest_framework.views import APIView
 from .models import User, InvestmentAccount, UserInvestmentAccount
+from .models import *
+from .serializer import *
 from .serializer import UserSerializer, InvestmentAccountSerializer, UserInvestmentAccountSerializer, UserRegistrationSerializer
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .forms import SignUpForm
 from .serializer import UserRegistrationSerializer
+
+class BanksAPIView(generics.ListCreateAPIView):
+    queryset = Bank.objects.all()
+    serializer_class = BankSerializer
+
+class BankDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Bank.objects.all()
+    serializer_class = BankSerializer
+
+class BranchesAPIView(generics.ListCreateAPIView):
+    queryset = Branch.objects.all()
+    serializer_class = BranchSerializer
+
+class BranchDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Branch.objects.all()
+    serializer_class = BranchSerializer
 
 def home(request):
     users = User.objects.all()
