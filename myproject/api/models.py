@@ -28,18 +28,24 @@ class User(models.Model):
     def __str__(self):
         return (f"{self.first_name} {self.surname} {self.last_name}")
 
-class Branch (models.Model):
+class Branch(models.Model):
     name = models.CharField(max_length=100)
     address = models.TextField(max_length=250)
     branch_code = models.CharField(max_length=10, unique=True)
-    
+
     class Meta:
         verbose_name_plural = "Branches"
+
+    def __str__(self):
+        return f"{self.name} ({self.branch_code})"
 
 class Bank(models.Model):
     name = models.CharField(max_length=100)
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, null=True, blank=True)
 
+    def __str__(self):
+        return self.name
+    
 class InvestmentAccount(models.Model):
     ACCOUNT_TYPE_CHOICES = [
         ('Investment Account 1', 'Investment Account 1'),
@@ -78,7 +84,7 @@ class InvestmentAccount(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Investment Account Type: {self.account_type}"
+        return f"{self.account_number}"
 
 class UserInvestmentAccount(models.Model):
     VIEW_ONLY = 'view'
@@ -97,7 +103,10 @@ class UserInvestmentAccount(models.Model):
 
     class Meta:
         unique_together = ('user', 'investment_account')
-
+    
+    def __str__(self):
+        return f"{self.user} - {self.investment_account.account_number}"
+    
 class Transaction(models.Model):
     TRANSACTION_TYPE_CHOICES = [
         ('withdraw', 'Withdraw'),
