@@ -1,5 +1,5 @@
 from django.urls import path, re_path
-from .views import get_users, create_user, user_detail, investment_accounts, investment_account_detail, register_user, BanksAPIView, BranchesAPIView, BranchDetailAPIView, BankDetailAPIView, InvestmentAccountViewSet, TransferViewSet, WithdrawViewSet, DepositViewSet
+from .views import get_users, create_user, user_detail, investment_accounts, user_transactions, investment_account_detail, register_user, BanksAPIView, BranchesAPIView, BranchDetailAPIView, BankDetailAPIView, InvestmentAccountViewSet, TransferViewSet, WithdrawViewSet, DepositViewSet, user_transactions
 from . import views
 
 urlpatterns = [
@@ -11,6 +11,7 @@ urlpatterns = [
     path('accounts/', investment_accounts, name='investment_accounts'),
     path('accounts/<int:pk>/', investment_account_detail, name='investment_account_detail'),
     path('register/', views.register_user, name='register'),
+    path('user-transactions/<int:user_id>/', user_transactions, name='user-transactions'),
     path('investment-accounts/', InvestmentAccountViewSet.as_view({'get': 'list', 'post': 'create'}), name='investment-accounts'),
     path('investment-accounts/<int:pk>/', InvestmentAccountViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}), name='investment-account-detail'),
     path('transfers/', TransferViewSet.as_view({'get': 'list', 'post': 'create'}), name='transfers'),

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, InvestmentAccount, UserInvestmentAccount, Bank, Branch, Transfer, Withdraw, Deposit
+from .models import User, InvestmentAccount, UserInvestmentAccount, Bank, Branch, Transfer, Withdraw, Deposit, Transaction
 from django.contrib.auth.hashers import make_password
 
 class UserSerializer(serializers.ModelSerializer):
@@ -41,6 +41,11 @@ class UserInvestmentAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserInvestmentAccount
         fields = '__all__'
+
+class TransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Transaction
+        fields = '__all__'        
 
 class TransferSerializer(serializers.ModelSerializer):
     class Meta:

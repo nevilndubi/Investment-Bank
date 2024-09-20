@@ -3,17 +3,21 @@ from django.shortcuts import render, redirect
 from django.http import Http404
 
 # My views are here.
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework import status, generics, viewsets
 from rest_framework.views import APIView
-from .models import User, InvestmentAccount, UserInvestmentAccount, Bank, Branch, Transfer, Withdraw, Deposit
+from rest_framework.permissions import IsAuthenticated
+from .models import User, InvestmentAccount, UserInvestmentAccount, Bank, Branch, Transfer, Withdraw, Deposit, Transaction
 from .models import *
 from .serializer import *
-from .serializer import UserSerializer, InvestmentAccountSerializer, UserInvestmentAccountSerializer, UserRegistrationSerializer, BankSerializer, BranchSerializer, TransferSerializer, WithdrawSerializer, DepositSerializer
+from .permissions import IsViewOnly, IsFullAccess, IsPostOnly
+from .serializer import UserSerializer, InvestmentAccountSerializer, UserInvestmentAccountSerializer, UserRegistrationSerializer, BankSerializer, BranchSerializer, TransferSerializer, WithdrawSerializer, DepositSerializer, TransactionSerializer
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .forms import SignUpForm
+from django.db.models import Sum
+from datetime import datetime
 from .serializer import UserRegistrationSerializer
 
 class BanksAPIView(generics.ListCreateAPIView):
@@ -32,21 +36,62 @@ class BranchDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Branch.objects.all()
     serializer_class = BranchSerializer
 
+
 class InvestmentAccountViewSet(viewsets.ModelViewSet):
     queryset = InvestmentAccount.objects.all()
     serializer_class = InvestmentAccountSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        account = serializer.save()
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            self.permission_classes = [IsAuthenticated, IsViewOnly]
+        elif self.action in ['create', 'update', 'partial_update', 'destroy']:
+            self.permission_classes = [IsAuthenticated, IsFullAccess]
+        elif self.action == 'post_transaction':
+            self.permission_classes = [IsAuthenticated, IsPostOnly]
+        return super().get_permissions()
+
+    @action(detail=True, methods=['post'])
+    def post_transaction(self, request, pk=None):
+        # Implement the logic for posting a transaction
+        pass
+
+class TransactionViewSet(viewsets.ModelViewSet):
+    queryset = Transaction.objects.all()
+    serializer_class = TransactionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        transaction = serializer.save()
+        account = transaction.account
+        if transaction.transaction_type == 'withdraw':
+            account.balance -= transaction.amount
+        elif transaction.transaction_type == 'deposit':
+            account.balance += transaction.amount
+        elif transaction.transaction_type == 'transfer':
+            account.balance -= transaction.amount
+            recipient_account = Transfer.objects.get(transaction=transaction).recipient_account
+            recipient_account.balance += transaction.amount
+            recipient_account.save()
+        account.save()
 
 class TransferViewSet(viewsets.ModelViewSet):
     queryset = Transfer.objects.all()
     serializer_class = TransferSerializer
+    permission_classes = [IsAuthenticated, IsFullAccess]
 
 class WithdrawViewSet(viewsets.ModelViewSet):
     queryset = Withdraw.objects.all()
     serializer_class = WithdrawSerializer
+    permission_classes = [IsAuthenticated, IsFullAccess]
 
 class DepositViewSet(viewsets.ModelViewSet):
     queryset = Deposit.objects.all()
     serializer_class = DepositSerializer
+    permission_classes = [IsAuthenticated, IsFullAccess]
 
 def home(request):
     users = User.objects.all()
@@ -161,3 +206,22 @@ def investment_account_detail(request, pk):
         account.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+@api_view(['GET'])
+def user_transactions(request, user_id):
+    start_date = request.query_params.get('start_date')
+    end_date = request.query_params.get('end_date')
+
+    if start_date and end_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date, '%Y-%m-%d')
+        transactions = Transaction.objects.filter(account__users__id=user_id, created_at__range=[start_date, end_date])
+    else:
+        transactions = Transaction.objects.filter(account__users__id=user_id)
+
+    total_balance = InvestmentAccount.objects.filter(users__id=user_id).aggregate(Sum('balance'))['balance__sum']
+    serializer = TransactionSerializer(transactions, many=True)
+
+    return Response({
+        'transactions': serializer.data,
+        'total_balance': total_balance
+    }, status=status.HTTP_200_OK)

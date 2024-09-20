@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 from django.db import models
+from django.contrib.auth.models import User
 from datetime import datetime, date
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils import timezone
@@ -35,28 +36,9 @@ class Branch (models.Model):
     class Meta:
         verbose_name_plural = "Branches"
 
-    def json_object(self):
-        return {
-            "name ": self.name,
-            "address": self.address,
-            "branch_code": self.branch_code
-        }
-    
-    def __str__(self):
-        return self.name
-
 class Bank(models.Model):
     name = models.CharField(max_length=100)
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
-
-    def json_object(self):
-        return {
-            "name": self.name,
-            "branch": self.branch
-        } 
-    
-    def __str__(self):
-        return self.name
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, null=True, blank=True)
 
 class InvestmentAccount(models.Model):
     ACCOUNT_TYPE_CHOICES = [
@@ -65,15 +47,14 @@ class InvestmentAccount(models.Model):
         ('Investment Account 3', 'Investment Account 3'),  
     ]
 
-    account_type = models.CharField(max_length=100, choices=ACCOUNT_TYPE_CHOICES)
+    account_type = models.CharField(max_length=100, choices=ACCOUNT_TYPE_CHOICES, default='Investment Account 1')
     account_number = models.CharField(max_length=20, unique=True, blank=True)
-    users = models.ManyToManyField(User, related_name='investment_accounts', blank=True)
+    users = models.ManyToManyField(User, through='UserInvestmentAccount', related_name='investment_accounts', blank=True)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    transactions = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    bank = models.ForeignKey(Bank, on_delete=models.CASCADE)
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    bank = models.ForeignKey(Bank, on_delete=models.CASCADE, default=1)  # Assuming 1 is a valid Bank ID
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, default=1)  # Assuming 1 is a valid Branch ID
 
     def save(self, *args, **kwargs):
         if not self.account_number:
@@ -100,10 +81,42 @@ class InvestmentAccount(models.Model):
         return f"Investment Account Type: {self.account_type}"
 
 class UserInvestmentAccount(models.Model):
+    VIEW_ONLY = 'view'
+    FULL_ACCESS = 'full'
+    POST_ONLY = 'post'
+
+    ACCESS_LEVEL_CHOICES = [
+        (VIEW_ONLY, 'View Only'),
+        (FULL_ACCESS, 'Full Access'),
+        (POST_ONLY, 'Post Only'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     investment_account = models.ForeignKey(InvestmentAccount, on_delete=models.CASCADE)
+    access_level = models.CharField(max_length=10, choices=ACCESS_LEVEL_CHOICES)
 
+    class Meta:
+        unique_together = ('user', 'investment_account')
+
+class Transaction(models.Model):
+    TRANSACTION_TYPE_CHOICES = [
+        ('withdraw', 'Withdraw'),
+        ('deposit', 'Deposit'),
+        ('transfer', 'Transfer'),
+    ]
+
+    transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPE_CHOICES)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    account = models.ForeignKey(InvestmentAccount, on_delete=models.CASCADE, related_name='transactions')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.transaction_type} of {self.amount} on {self.account.account_number}"
+    
 class Transfer(models.Model):
+    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE)
+    recipient_account = models.ForeignKey(InvestmentAccount, related_name='received_transfers', on_delete=models.CASCADE)
     account = models.ForeignKey(InvestmentAccount, on_delete=models.CASCADE)
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -113,6 +126,7 @@ class Transfer(models.Model):
         return f"Transfer of {self.amount} to {self.branch.name} on {self.date}"
 
 class Withdraw(models.Model):
+    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE)
     amount = models.FloatField()
     account = models.ForeignKey(InvestmentAccount, on_delete=models.CASCADE)
     date = models.DateTimeField(default=timezone.now)
@@ -121,6 +135,7 @@ class Withdraw(models.Model):
         return f"Withdraw of {self.amount}"
 
 class Deposit(models.Model):
+    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE)
     amount = models.FloatField()
     account = models.ForeignKey(InvestmentAccount, on_delete=models.CASCADE)
     date = models.DateTimeField(default=timezone.now)
